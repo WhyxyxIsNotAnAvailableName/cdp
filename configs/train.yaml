@@ -1,0 +1,100 @@
+run_id: cdp_robocasa
+run_root_dir: path/to/training_outputs
+seed: 42
+wandb_entity: null
+wandb_project: cdp
+is_debug: false
+
+framework:
+  name: CDPPolicy
+  qwenvl:
+    base_vlm: path/to/vlm_model
+    attn_implementation: flash_attention_2
+    gradient_checkpointing: true
+  action_model:
+    action_dim: null
+    add_pos_embed: true
+    max_seq_len: 1024
+    action_horizon: null
+    repeated_diffusion_steps: 8
+    num_inference_timesteps: 4
+    inference_noise_schedule: cosine
+    num_target_vision_tokens: 32
+    noise_beta_alpha: 1.5
+    noise_beta_beta: 1.0
+    noise_s: 0.999
+    num_timestep_buckets: 1000
+    diffusion_model_cfg:
+      action_dit_hidden_dim: 1024
+      dropout: 0.2
+      final_dropout: true
+      interleave_self_attention: true
+      norm_type: ada_norm
+      positional_embeddings: null
+      attention_head_dim: 64
+  composition:
+    branch_weights: [0.25, 0.25, 0.25, 0.25]
+    magnitude_alpha: 0.4
+    magnitude_loss_weight: 1.0
+    low_frequency_grid: [8, 8]
+    background_size: [224, 224]
+
+datasets:
+  vla_data:
+    dataset_py: lerobot_datasets
+    include_state: false
+    data_root_dir: path/to/dataset
+    datasets:
+      - name: path/to/task_dataset
+        weight: 1.0
+    keys: [robot0_agentview_left, robot0_agentview_right, robot0_eye_in_hand]
+    action_keys: [end_effector_position, end_effector_rotation, gripper_close, base_motion, control_mode]
+    state_keys: []
+    language_key: human.task_description
+    action_normalization: min_max
+    action_horizon: ${framework.action_model.action_horizon}
+    semantic_sidecar_root: path/to/semantic_masks
+    semantic_sidecar_cache_size: 8
+    semantic_factor_budget: 4
+    per_device_batch_size: 6
+    num_workers: 2
+    prefetch_factor: 2
+    persistent_workers: true
+    pin_memory: true
+    obs_image_size: [224, 224]
+    delete_pause_frame: false
+    video_backend: torchvision_av
+
+perception:
+  grounding_model: path/to/grounding_dino_model
+  sam_checkpoint: path/to/sam2_checkpoint.pt
+  sam_config: configs/sam2.1/sam2.1_hiera_l.yaml
+  batch_size: 8
+  box_threshold: 0.3
+  text_threshold: 0.25
+
+trainer:
+  max_train_steps: 100000
+  lr_scheduler_total_steps: 100000
+  num_warmup_steps: 5000
+  save_interval: 5000
+  max_checkpoints_to_keep: 2
+  learning_rate:
+    base: 1.0e-05
+    qwen_vl_interface: 1.0e-05
+    action_model: 1.0e-04
+  lr_scheduler_type: cosine_with_min_lr
+  scheduler_specific_kwargs:
+    min_lr: 5.0e-07
+  freeze_modules: qwen_vl_interface
+  is_resume: true
+  fused_optimizer: true
+  logging_frequency: 10
+  gradient_clipping: 1.0
+  gradient_accumulation_steps: 1
+  optimizer:
+    name: AdamW
+    betas: [0.9, 0.95]
+    eps: 1.0e-08
+    weight_decay: 1.0e-08
+  save_format: pt

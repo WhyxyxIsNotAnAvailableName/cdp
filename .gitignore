@@ -1,0 +1,28 @@
+# Large experiment/data directories
+checkpoint/
+datasets/
+results/
+tmp/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.cache/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+checkpoints/
+*.egg-info/
+build/
+dist/
+.ruff_cache/
+logs/
+wandb/
+runs/
+*.log
